@@ -1,0 +1,1005 @@
+\section*{Appendix}
+
+
+In this section we will show the actual code lines used for this dissertation
+
+This is the code used for interpolating the original Romance Digit data file into a dataframe and plotting relevant figures.
+\begin{verbatim}
+########## Interpolation ############
+
+
+itpData <- matrix(0, ncol = 5000, nrow = 1)
+
+for (i in 1:length(Data)){
+  ytemp <- data.frame(Data[i])
+  y <- c()
+  
+  for (j in 1:nrow(ytemp)){
+    y <- append(y, ytemp[j,])
+  }
+  
+  x <- c(1:nrow(ytemp))
+  
+  ##plot(x, y)
+  
+  xoutval = seq(1,nrow(ytemp),len=5000)
+  templist <- approx(x, y, xout=xoutval, method='linear')
+  
+  ##plot(templist)
+  
+  tempylist <- unlist(templist[2])
+  itpData <- rbind(itpData, tempylist)
+}
+
+finalDF <- data.frame(itpData)
+finalDF <- finalDF[-1, ]
+
+for (i in 1:nrow(finalDF)){
+  rownames(finalDF)[i] <- names(Data)[i]
+}
+
+saveDF <- finalDF
+
+rm(itpData)
+rm(my_pca)
+rm(templist)
+rm(ytemp)
+\end{verbatim}
+
+This is the code used for transforming the interpolated dataframe into a spectrum and plotting relevant figures such as spectrograms
+\begin{verbatim}
+################## Spectrogram ################
+
+
+library(signal, warn.conflicts = F, quietly = T) # signal processing functions
+library(oce, warn.conflicts = F, quietly = T) # image plotting functions and nice color maps
+library(tuneR, warn.conflicts = F, quietly = T) 
+
+specData <- matrix(0, ncol = 19456, nrow = 1)
+
+nfft=1024
+window=256
+overlap=128
+dur=5
+fs=1000
+
+for (i in 1:length(Data)){
+  snd = unlist(finalDF[i,])
+  mean(snd)
+  snd = snd - mean(snd)
+  
+  setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/Spectrum(new)/Romance/Wave")
+  pdf(paste(gsub("c", "", rownames(finalDF)[i]), "pdf", sep=""), width = 15, height = 8) 
+  plot(snd, type = 'l', xlab = 'Samples', ylab = 'Amplitude')
+  dev.off() 
+  
+  spec = specgram(x = snd, n = nfft, Fs = fs, window = window, overlap = overlap)
+  
+  P = abs(spec$S)
+  P = P/max(P)
+  P = 10*log10(P)
+  t = spec$t
+  
+  setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/Spectrum(new)/Romance/Spectrogram (raw)")
+  pdf(paste(gsub("c", "", rownames(finalDF)[i]), "pdf", sep=""), width = 15, height = 8) 
+  image(P)
+  dev.off() 
+  
+  setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/Spectrum(new)/Romance/Spectrogram (processed)")
+  pdf(paste(gsub("c", "", rownames(finalDF)[i]), "pdf", sep=""), width = 15, height = 8) 
+  imagep(x = t, y = spec$f, z = t(P), col = oce.colorsViridis, ylab = 'Frequency [Hz]', xlab = 'Time [s]', drawPalette = T, decimate = F
+  )
+  dev.off()
+  
+  P <- c(t(P))
+  specData <- rbind(specData, P)
+}
+
+finalSpec <- data.frame(specData)
+finalSpec <- finalSpec[-1, ]
+
+for (i in 1:nrow(finalSpec)){
+  rownames(finalSpec)[i] <- names(Data)[i]
+}
+
+saveSpec <- finalSpec
+
+rm(spec)
+rm(specData)
+\end{verbatim}
+
+This is the code used for applying the PCA technique on interpolated dataframe and plotting relevant figures.
+\begin{verbatim}
+###################### PCA #####################
+
+
+help(prcomp)
+library(factoextra)
+
+my_pca <- prcomp(finalDF, scale = TRUE, center = TRUE, retx = T)
+
+names(my_pca);
+summary(my_pca);
+
+my_pca$sdev
+my_pca$rotation
+my_pca$center
+my_pca$scale
+my_pca$x
+dim(my_pca$x);
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA/rotations")
+pdf("PC1 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,1], type = "l", xlab = "PC1", ylab = "rotation")
+dev.off()
+
+pdf("PC2 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,2], type = "l", xlab = "PC2", ylab = "rotation")
+dev.off()
+
+pdf("PC3 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,3], type = "l", xlab = "PC3", ylab = "rotation")
+dev.off()
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA/PC biplots")
+pdf("PC1 and PC2.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,2], cex = 1, xlab = "PC1", ylab = "PC2", main = "PC1 and PC2")
+dev.off()
+
+pdf("PC1 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,3], cex = 1, xlab = "PC1", ylab = "PC3", main = "PC1 and PC3")
+dev.off()
+
+pdf("PC2 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,2], my_pca$x[,3], cex = 1, xlab = "PC2", ylab = "PC3", main = "PC2 and PC3")
+dev.off()
+
+# Compute variance
+
+my_pca.var <- my_pca$sdev ^ 2;
+my_pca.var;
+
+# Proportion of variance for a scree plot #
+
+propve <- my_pca.var / sum(my_pca.var);
+propve;
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA/Scree Plot")
+pdf("Scree Plot.pdf", width = 15, height = 8) 
+plot(propve, xlab = "Principal Component",
+     ylab = "Proportion of Variance",
+     ylim = c(0, 1), type = "b",
+     main = "Scree Plot");
+dev.off()
+
+# Plot the cumulative proportion of variance explained
+
+pdf("Cumulative Scree Plot.pdf", width = 15, height = 8) 
+plot(cumsum(propve),
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance",
+     ylim = c(0, 1), 
+     type = "b",
+     main = "Cumulative Scree Plot");
+dev.off()
+
+#Find Top n principal component
+# which will at least cover 90 % variance of dimension
+
+dim(my_pca$x) # 219
+ncovdata <- which(cumsum(propve) >= 0.8)[1] 
+ncovdata # 56/219
+ncovdata <- which(cumsum(propve) >= 0.9)[1] 
+ncovdata # 85/219
+ncovdata <- which(cumsum(propve) >= 0.95)[1] 
+ncovdata # 112/219
+
+rm(my_pca)
+\end{verbatim}
+
+This is the code used for applying the PCA technique on spectrum dataframe and plotting relevant figures.
+\begin{verbatim}
+################### PCA on Spectrum ################
+
+
+my_pca <- prcomp(finalSpec, scale = TRUE, center = TRUE, retx = T)
+
+names(my_pca);
+summary(my_pca);
+
+my_pca$sdev
+my_pca$rotation
+my_pca$center
+my_pca$scale
+my_pca$x
+dim(my_pca$x);
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA Spectrum/rotations")
+pdf("PC1 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,1], type = "l", xlab = "PC1", ylab = "rotation")
+dev.off()
+
+pdf("PC2 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,2], type = "l", xlab = "PC2", ylab = "rotation")
+dev.off()
+
+pdf("PC3 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,3], type = "l", xlab = "PC3", ylab = "rotation")
+dev.off()
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA Spectrum/PC biplots")
+pdf("PC1 and PC2.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,2], cex = 1, xlab = "PC1", ylab = "PC2", main = "PC1 and PC2")
+dev.off()
+
+pdf("PC1 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,3], cex = 1, xlab = "PC1", ylab = "PC3", main = "PC1 and PC3")
+dev.off()
+
+pdf("PC2 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,2], my_pca$x[,3], cex = 1, xlab = "PC2", ylab = "PC3", main = "PC2 and PC3")
+dev.off()
+
+# Compute variance
+
+my_pca.var <- my_pca$sdev ^ 2;
+my_pca.var;
+
+# Proportion of variance for a scree plot
+
+propve <- my_pca.var / sum(my_pca.var);
+propve;
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA Spectrum/Scree Plot")
+pdf("Scree Plot.pdf", width = 15, height = 8) 
+plot(propve, xlab = "Principal Component",
+     ylab = "Proportion of Variance",
+     ylim = c(0, 1), type = "b",
+     main = "Scree Plot");
+dev.off()
+
+# Plot the cumulative proportion of variance explained
+
+pdf("Cumulative Scree Plot.pdf", width = 15, height = 8) 
+plot(cumsum(propve),
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance",
+     ylim = c(0, 1), 
+     type = "b",
+     main = "Cumulative Scree Plot");
+dev.off()
+
+# Find Top n principal component
+# which will atleast cover 90 % variance of dimension
+
+ncovdata <- which(cumsum(propve) >= 0.8)[1] 
+ncovdata # 35
+ncovdata <- which(cumsum(propve) >= 0.9)[1] 
+ncovdata # 92
+ncovdata <- which(cumsum(propve) >= 0.95)[1] 
+ncovdata # 142
+\end{verbatim}
+
+This is the code used for applying the PCA technique on Portuguese section of the interpolated dataframe and plotting relevant figures.
+\begin{verbatim}
+######################## PCA (Portuguese) ########################
+
+
+library(dplyr)
+
+finalDFPO <- finalDF[1:25, ]
+finalDFPOM <- finalDF[1:9, ]
+finalDFPOF <- finalDF[10:25, ]
+
+my_pca <- prcomp(finalDFPO, scale = TRUE, center = TRUE, retx = T)
+
+names(my_pca);
+summary(my_pca);
+
+my_pca$sdev
+my_pca$rotation
+my_pca$center
+my_pca$scale
+my_pca$x
+dim(my_pca$x);
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Portuguese)/rotations")
+pdf("PC1 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,1], type = "l", xlab = "PC1", ylab = "rotation")
+dev.off()
+
+pdf("PC2 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,2], type = "l", xlab = "PC2", ylab = "rotation")
+dev.off()
+
+pdf("PC3 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,3], type = "l", xlab = "PC3", ylab = "rotation")
+dev.off()
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Portuguese)/PC biplots")
+pdf("PC1 and PC2.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,2], cex = 1, xlab = "PC1", ylab = "PC2", main = "PC1 and PC2")
+dev.off()
+
+pdf("PC1 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,3], cex = 1, xlab = "PC1", ylab = "PC3", main = "PC1 and PC3")
+dev.off()
+
+pdf("PC2 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,2], my_pca$x[,3], cex = 1, xlab = "PC2", ylab = "PC3", main = "PC2 and PC3")
+dev.off()
+
+# Compute variance
+
+my_pca.var <- my_pca$sdev ^ 2;
+my_pca.var;
+
+# Proportion of variance for a scree plot
+
+propve <- my_pca.var / sum(my_pca.var);
+propve;
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Portuguese)/Scree Plot")
+pdf("Scree Plot.pdf", width = 15, height = 8) 
+plot(propve, xlab = "Principal Component",
+     ylab = "Proportion of Variance",
+     ylim = c(0, 1), type = "b",
+     main = "Scree Plot");
+dev.off()
+
+# Plot the cumulative proportion of variance explained
+
+pdf("Cumulative Scree Plot.pdf", width = 15, height = 8) 
+plot(cumsum(propve),
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance",
+     ylim = c(0, 1), 
+     type = "b",
+     main = "Cumulative Scree Plot");
+dev.off()
+
+# Find Top n principal component
+# which will at least cover 90 % variance of dimension
+
+dim(my_pca$x) # 25
+ncovdata <- which(cumsum(propve) >= 0.8)[1] 
+ncovdata # 14/25
+ncovdata <- which(cumsum(propve) >= 0.9)[1] 
+ncovdata # 17/25
+ncovdata <- which(cumsum(propve) >= 0.95)[1] 
+ncovdata # 20/25
+\end{verbatim}
+
+This is the code used for applying the PCA technique on Italian section of the interpolated dataframe and plotting relevant figures.
+\begin{verbatim}
+######################## PCA (Italian) ########################
+
+library(dplyr)
+
+finalDFIT <- finalDF[26:75, ]
+
+my_pca <- prcomp(finalDFIT, scale = TRUE, center = TRUE, retx = T)
+
+names(my_pca);
+summary(my_pca);
+
+my_pca$sdev
+my_pca$rotation
+my_pca$center
+my_pca$scale
+my_pca$x
+dim(my_pca$x);
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Italian)/rotations")
+pdf("PC1 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,1], type = "l", xlab = "PC1", ylab = "rotation")
+dev.off()
+
+pdf("PC2 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,2], type = "l", xlab = "PC2", ylab = "rotation")
+dev.off()
+
+pdf("PC3 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,3], type = "l", xlab = "PC3", ylab = "rotation")
+dev.off()
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Italian)/PC biplots")
+pdf("PC1 and PC2.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,2], cex = 1, xlab = "PC1", ylab = "PC2", main = "PC1 and PC2")
+dev.off()
+
+pdf("PC1 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,3], cex = 1, xlab = "PC1", ylab = "PC3", main = "PC1 and PC3")
+dev.off()
+
+pdf("PC2 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,2], my_pca$x[,3], cex = 1, xlab = "PC2", ylab = "PC3", main = "PC2 and PC3")
+dev.off()
+
+# Compute variance
+
+my_pca.var <- my_pca$sdev ^ 2;
+my_pca.var;
+
+# Proportion of variance for a scree plot
+
+propve <- my_pca.var / sum(my_pca.var);
+propve;
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Italian)/Scree Plot")
+pdf("Scree Plot.pdf", width = 15, height = 8) 
+plot(propve, xlab = "Principal Component",
+     ylab = "Proportion of Variance",
+     ylim = c(0, 1), type = "b",
+     main = "Scree Plot");
+dev.off()
+
+# Plot the cumulative proportion of variance explained
+
+pdf("Cumulative Scree Plot.pdf", width = 15, height = 8) 
+plot(cumsum(propve),
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance",
+     ylim = c(0, 1), 
+     type = "b",
+     main = "Cumulative Scree Plot");
+dev.off()
+
+# Find Top n principal component
+# which will at least cover 90 % variance of dimension
+
+dim(my_pca$x) # 50
+ncovdata <- which(cumsum(propve) >= 0.8)[1] 
+ncovdata # 20/50
+ncovdata <- which(cumsum(propve) >= 0.9)[1] 
+ncovdata # 29/50
+ncovdata <- which(cumsum(propve) >= 0.95)[1] 
+ncovdata # 35/50
+\end{verbatim}
+
+This is the code used for applying the PCA technique on Spanish Italian section of the interpolated dataframe and plotting relevant figures.
+\begin{verbatim}
+##################### PCA (Spanish Italian) #####################
+
+
+library(dplyr)
+
+finalDFSI <- finalDF[76:113, ]
+finalDFSIM <- finalDF[85:94, ]
+finalDFSIM <- bind_rows(finalDFSIM, finalDF[104:113, ])
+finalDFSIF <- finalDF[76:84, ]
+finalDFSIF <- bind_rows(finalDFSIF, finalDF[95:103, ])
+
+dim(finalDFSI)
+dim(finalDFSIM)
+dim(finalDFSIF)
+
+my_pca <- prcomp(finalDFSI, scale = TRUE, center = TRUE, retx = T)
+
+names(my_pca);
+summary(my_pca);
+
+my_pca$sdev
+my_pca$rotation
+my_pca$center
+my_pca$scale
+my_pca$x
+dim(my_pca$x);
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Iberian Spanish)/rotations")
+pdf("PC1 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,1], type = "l", xlab = "PC1", ylab = "rotation")
+dev.off()
+
+pdf("PC2 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,2], type = "l", xlab = "PC2", ylab = "rotation")
+dev.off()
+
+pdf("PC3 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,3], type = "l", xlab = "PC3", ylab = "rotation")
+dev.off()
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Iberian Spanish)/PC biplots")
+pdf("PC1 and PC2.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,2], cex = 1, xlab = "PC1", ylab = "PC2", main = "PC1 and PC2")
+dev.off()
+
+pdf("PC1 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,3], cex = 1, xlab = "PC1", ylab = "PC3", main = "PC1 and PC3")
+dev.off()
+
+pdf("PC2 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,2], my_pca$x[,3], cex = 1, xlab = "PC2", ylab = "PC3", main = "PC2 and PC3")
+dev.off()
+
+# Compute variance
+
+my_pca.var <- my_pca$sdev ^ 2;
+my_pca.var;
+
+# Proportion of variance for a scree plot
+
+propve <- my_pca.var / sum(my_pca.var);
+propve;
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (Iberian Spanish)/Scree Plot")
+pdf("Scree Plot.pdf", width = 15, height = 8) 
+plot(propve, xlab = "Principal Component",
+     ylab = "Proportion of Variance",
+     ylim = c(0, 1), type = "b",
+     main = "Scree Plot");
+dev.off()
+
+# Plot the cumulative proportion of variance explained
+
+pdf("Cumulative Scree Plot.pdf", width = 15, height = 8) 
+plot(cumsum(propve),
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance",
+     ylim = c(0, 1), 
+     type = "b",
+     main = "Cumulative Scree Plot");
+dev.off()
+
+# Find Top n principal component
+# which will at least cover 90 % variance of dimension
+
+dim(my_pca$x) # 38
+ncovdata <- which(cumsum(propve) >= 0.8)[1] 
+ncovdata # 15/38
+ncovdata <- which(cumsum(propve) >= 0.9)[1] 
+ncovdata # 21/38
+ncovdata <- which(cumsum(propve) >= 0.95)[1] 
+ncovdata # 26/38
+\end{verbatim}
+
+This is the code used for applying the PCA technique on French section of the interpolated dataframe and plotting relevant figures.
+\begin{verbatim}
+######################## PCA (French) ########################
+
+
+library(dplyr)
+
+finalDFFR <- finalDF[114:173, ]
+finalDFFRM <- finalDF[134:143, ]
+finalDFFRM <- bind_rows(finalDFFRM, finalDF[160:163, ])
+finalDFFRF <- finalDF[114:133, ]
+finalDFFRF <- bind_rows(finalDFFRF, finalDF[144:159, ])
+finalDFFRF <- bind_rows(finalDFFRF, finalDF[164:173, ])
+
+dim(finalDFFR)
+dim(finalDFFRM)
+dim(finalDFFRF)
+
+my_pca <- prcomp(finalDFFR, scale = TRUE, center = TRUE, retx = T)
+
+names(my_pca);
+summary(my_pca);
+
+my_pca$sdev
+my_pca$rotation
+my_pca$center
+my_pca$scale
+my_pca$x
+dim(my_pca$x);
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (French)/rotations")
+pdf("PC1 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,1], type = "l", xlab = "PC1", ylab = "rotation")
+dev.off()
+
+pdf("PC2 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,2], type = "l", xlab = "PC2", ylab = "rotation")
+dev.off()
+
+pdf("PC3 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,3], type = "l", xlab = "PC3", ylab = "rotation")
+dev.off()
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (French)/PC biplots")
+pdf("PC1 and PC2.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,2], cex = 1, xlab = "PC1", ylab = "PC2", main = "PC1 and PC2")
+dev.off()
+
+pdf("PC1 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,3], cex = 1, xlab = "PC1", ylab = "PC3", main = "PC1 and PC3")
+dev.off()
+
+pdf("PC2 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,2], my_pca$x[,3], cex = 1, xlab = "PC2", ylab = "PC3", main = "PC2 and PC3")
+dev.off()
+
+# Compute variance
+
+my_pca.var <- my_pca$sdev ^ 2;
+my_pca.var;
+
+# Proportion of variance for a scree plot
+
+propve <- my_pca.var / sum(my_pca.var);
+propve;
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (French)/Scree Plot")
+pdf("Scree Plot.pdf", width = 15, height = 8) 
+plot(propve, xlab = "Principal Component",
+     ylab = "Proportion of Variance",
+     ylim = c(0, 1), type = "b",
+     main = "Scree Plot");
+dev.off()
+
+# Plot the cumulative proportion of variance explained
+
+pdf("Cumulative Scree Plot.pdf", width = 15, height = 8) 
+plot(cumsum(propve),
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance",
+     ylim = c(0, 1), 
+     type = "b",
+     main = "Cumulative Scree Plot");
+dev.off()
+
+# Find Top n principal component
+# which will at least cover 90 % variance of dimension
+
+dim(my_pca$x) # 60
+ncovdata <- which(cumsum(propve) >= 0.8)[1] 
+ncovdata # 22/60
+ncovdata <- which(cumsum(propve) >= 0.9)[1] 
+ncovdata # 31/60
+ncovdata <- which(cumsum(propve) >= 0.95)[1] 
+ncovdata # 39/60
+\end{verbatim}
+
+This is the code used for applying the PCA technique on American Spanish section of the interpolated dataframe and plotting relevant figures.
+\begin{verbatim}
+##################### PCA (American Spanish) #####################
+
+library(dplyr)
+
+finalDFSA <- finalDF[174:219, ]
+finalDFSAM <- finalDF[180:189, ]
+finalDFSAF <- finalDF[174:179, ]
+finalDFSAF <- bind_rows(finalDFSAF, finalDF[190:219, ])
+
+dim(finalDFSA)
+dim(finalDFSAM)
+dim(finalDFSAF)
+
+my_pca <- prcomp(finalDFSA, scale = TRUE, center = TRUE, retx = T)
+
+names(my_pca);
+summary(my_pca);
+
+my_pca$sdev
+my_pca$rotation
+my_pca$center
+my_pca$scale
+my_pca$x
+dim(my_pca$x);
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (American Spanish)/rotations")
+pdf("PC1 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,1], type = "l", xlab = "PC1", ylab = "rotation")
+dev.off()
+
+pdf("PC2 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,2], type = "l", xlab = "PC2", ylab = "rotation")
+dev.off()
+
+pdf("PC3 rotation.pdf", width = 15, height = 8) 
+plot(my_pca$rotation[,3], type = "l", xlab = "PC3", ylab = "rotation")
+dev.off()
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (American Spanish)/PC biplots")
+pdf("PC1 and PC2.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,2], cex = 1, xlab = "PC1", ylab = "PC2", main = "PC1 and PC2")
+dev.off()
+
+pdf("PC1 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,1], my_pca$x[,3], cex = 1, xlab = "PC1", ylab = "PC3", main = "PC1 and PC3")
+dev.off()
+
+pdf("PC2 and PC3.pdf", width = 15, height = 8) 
+plot(my_pca$x[,2], my_pca$x[,3], cex = 1, xlab = "PC2", ylab = "PC3", main = "PC2 and PC3")
+dev.off()
+
+# Compute variance
+
+my_pca.var <- my_pca$sdev ^ 2;
+my_pca.var;
+
+# Proportion of variance for a scree plot
+
+propve <- my_pca.var / sum(my_pca.var);
+propve;
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/PCA (American Spanish)/Scree Plot")
+pdf("Scree Plot.pdf", width = 15, height = 8) 
+plot(propve, xlab = "Principal Component",
+     ylab = "Proportion of Variance",
+     ylim = c(0, 1), type = "b",
+     main = "Scree Plot");
+dev.off()
+
+# Plot the cumulative proportion of variance explained
+
+pdf("Cumulative Scree Plot.pdf", width = 15, height = 8) 
+plot(cumsum(propve),
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance",
+     ylim = c(0, 1), 
+     type = "b",
+     main = "Cumulative Scree Plot");
+dev.off()
+
+# Find Top n principal component
+# which will at least cover 90 % variance of dimension
+
+dim(my_pca$x) # 46
+ncovdata <- which(cumsum(propve) >= 0.8)[1] 
+ncovdata # 7/46
+ncovdata <- which(cumsum(propve) >= 0.9)[1] 
+ncovdata # 11/46
+ncovdata <- which(cumsum(propve) >= 0.95)[1] 
+ncovdata # 18/46
+\end{verbatim}
+
+This is the code used for applying the ICA technique on the interpolated dataframe and plotting relevant figures.
+\begin{verbatim}
+###################### ICA ####################
+
+
+install.packages("fastICA")
+install.packages("scatterplot3d")
+library(fastICA)
+library(scatterplot3d)
+
+# ICA with n.comp=5 
+
+ica5 <- fastICA(finalDF, n.comp=5)
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[5] 5x5 plot")
+
+pairs(ica5$S, col=rainbow(219))
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[5] individual plots")
+
+for (i in 1:5){
+  pdf(paste(paste("comp", i, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+  plot(ica5$S[,i],
+       ica5$S[,i], 
+       col=rainbow(219), 
+       xlab=paste("Comp", i, sep=" "), 
+       ylab=paste("Comp", i, sep=" "))
+  dev.off()
+}
+
+uniVal5 <- list()
+for (i in 1:5){
+  Comp <- sort(ica5$S[,i])
+  uniComp <- seq(min(ica5$S[,i]), max(ica5$S[,i]), length.out = 219)
+  uniVal <- 0
+  for (j in 1:219){
+    closeVal <- 0
+    closeVal <- which(abs(Comp-uniComp[j])==min(abs(Comp-uniComp[j])))
+    uniVal <- uniVal + abs(Comp[closeVal]-uniComp[j])
+  }
+  uniVal5 <- append(uniVal5, uniVal)
+}
+fitComp <- which.min(uniVal5)
+fitComp
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[5] individual plots/fittest")
+
+pdf(paste(paste("comp", fitComp, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+plot(ica5$S[,fitComp],
+     ica5$S[,fitComp], 
+     col=rainbow(219), 
+     xlab=paste("Comp", fitComp, sep=" "), 
+     ylab=paste("Comp", fitComp, sep=" "))
+dev.off()
+
+#ICA with n.comp=10 
+
+ica10 <- fastICA(finalDF, n.comp=10)
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[10] 10x10 plot")
+
+pairs(ica10$S, col=rainbow(10))
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[10] 5x5 plots")
+
+pairs(ica10$S[,1:5], col=rainbow(10))
+pairs(ica10$S[,6:10], col=rainbow(10))
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[10] individual plots")
+
+for (i in 1:10){
+  pdf(paste(paste("comp", i, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+  plot(ica10$S[,i],
+       ica10$S[,i], 
+       col=rainbow(219), 
+       xlab=paste("Comp", i, sep=" "), 
+       ylab=paste("Comp", i, sep=" "))
+  dev.off()
+}
+
+uniVal10new <- list()
+for (i in 1:10){
+  Comp <- sort(ica10$S[,i])
+  uniComp <- seq(min(ica10$S[,i]), max(ica10$S[,i]), length.out = 219)
+  uniVal <- 0
+  for (j in 1:219){
+    closeVal <- 0
+    closeVal <- which(abs(Comp-uniComp[j])==min(abs(Comp-uniComp[j])))
+    uniVal <- uniVal + abs(Comp[closeVal]-uniComp[j])
+  }
+  uniVal10new <- append(uniVal10new, uniVal)
+}
+fitComp <- which.min(uniVal10new)
+fitComp
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[10] individual plots/fittest")
+
+pdf(paste(paste("comp", fitComp, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+plot(ica10$S[,fitComp],
+     ica10$S[,fitComp], 
+     col=rainbow(219), 
+     xlab=paste("Comp", fitComp, sep=" "), 
+     ylab=paste("Comp", fitComp, sep=" "))
+dev.off()
+
+# ICA with n.comp=20
+
+ica20 <- fastICA(finalDF, n.comp=20)
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[20] 20x20 plot")
+
+pairs(ica20$S, col=rainbow(219))
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[20] 5x5 plots")
+
+pairs(ica20$S[,1:5], col=rainbow(219))
+pairs(ica20$S[,6:10], col=rainbow(219))
+pairs(ica20$S[,11:15], col=rainbow(219))
+pairs(ica20$S[,16:20], col=rainbow(219))
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[20] individual plots")
+
+for (i in 1:20){
+  pdf(paste(paste("comp", i, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+  plot(ica20$S[,i],
+       ica20$S[,i], 
+       col=rainbow(219), 
+       xlab=paste("Comp", i, sep=" "), 
+       ylab=paste("Comp", i, sep=" "))
+  dev.off()
+}
+
+uniVal20new <- list()
+for (i in 1:20){
+  Comp <- sort(ica20$S[,i])
+  uniComp <- seq(min(ica20$S[,i]), max(ica20$S[,i]), length.out = 219)
+  uniVal <- 0
+  for (j in 1:219){
+    closeVal <- 0
+    closeVal <- which(abs(Comp-uniComp[j])==min(abs(Comp-uniComp[j])))
+    uniVal <- uniVal + abs(Comp[closeVal]-uniComp[j])
+  }
+  uniVal20new <- append(uniVal20new, uniVal)
+}
+fitComp <- which.min(uniVal20new)
+fitComp
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[20] individual plots/fittest")
+
+pdf(paste(paste("comp", fitComp, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+plot(ica20$S[,fitComp],
+     ica20$S[,fitComp], 
+     col=rainbow(219), 
+     xlab=paste("Comp", fitComp, sep=" "), 
+     ylab=paste("Comp", fitComp, sep=" "))
+dev.off()
+
+#ICA with n.comp=40 
+
+ica40 <- fastICA(finalDF, n.comp=40)
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[40] 5x5 plots")
+
+pairs(ica40$S[,1:5], col=rainbow(10))
+pairs(ica40$S[,6:10], col=rainbow(10))
+pairs(ica40$S[,11:15], col=rainbow(10))
+pairs(ica40$S[,16:20], col=rainbow(10))
+pairs(ica40$S[,21:25], col=rainbow(10))
+pairs(ica40$S[,26:30], col=rainbow(10))
+pairs(ica40$S[,31:35], col=rainbow(10))
+pairs(ica40$S[,36:40], col=rainbow(10))
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[40] individual plots")
+
+for (i in 1:40){
+  pdf(paste(paste("comp", i, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+  plot(ica40$S[,i],
+       ica40$S[,i], 
+       col=rainbow(10), 
+       xlab=paste("Comp", i, sep=" "), 
+       ylab=paste("Comp", i, sep=" "))
+  dev.off()
+}
+
+uniVal40new <- list()
+for (i in 1:40){
+  Comp <- sort(ica40$S[,i])
+  uniComp <- seq(min(ica40$S[,i]), max(ica40$S[,i]), length.out = 219)
+  uniVal <- 0
+  for (j in 1:219){
+    closeVal <- 0
+    closeVal <- which(abs(Comp-uniComp[j])==min(abs(Comp-uniComp[j])))
+    uniVal <- uniVal + abs(Comp[closeVal]-uniComp[j])
+  }
+  uniVal40new <- append(uniVal40new, uniVal)
+}
+fitComp <- which.min(uniVal40new)
+fitComp
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[40] individual plots/fittest")
+
+pdf(paste(paste("comp", fitComp, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+plot(ica40$S[,fitComp],
+     ica40$S[,fitComp], 
+     col=rainbow(219), 
+     xlab=paste("Comp", fitComp, sep=" "), 
+     ylab=paste("Comp", fitComp, sep=" "))
+dev.off()
+
+# ICA with n.comp=80 
+
+ica80 <- fastICA(finalDF, n.comp=80)
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[80] 5x5 plots")
+
+pairs(ica80$S[,1:5], col=rainbow(10))
+pairs(ica80$S[,6:10], col=rainbow(10))
+pairs(ica80$S[,11:15], col=rainbow(10))
+pairs(ica80$S[,16:20], col=rainbow(10))
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[80] individual plots")
+
+for (i in 1:80){
+  pdf(paste(paste("comp", i, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+  plot(ica80$S[,i],
+       ica80$S[,i], 
+       col=rainbow(10), 
+       xlab=paste("Comp", i, sep=" "), 
+       ylab=paste("Comp", i, sep=" "))
+  dev.off()
+}
+
+uniVal80new <- list()
+for (i in 1:80){
+  Comp <- sort(ica80$S[,i])
+  uniComp <- seq(min(ica80$S[,i]), max(ica80$S[,i]), length.out = 219)
+  uniVal <- 0
+  for (j in 1:219){
+    closeVal <- 0
+    closeVal <- which(abs(Comp-uniComp[j])==min(abs(Comp-uniComp[j])))
+    uniVal <- uniVal + abs(Comp[closeVal]-uniComp[j])
+  }
+  uniVal80new <- append(uniVal80new, uniVal)
+}
+fitComp <- which.min(uniVal80new)
+fitComp
+
+setwd("C:/Users/csia7/Desktop/OneDrive/OneDrive_2022-11-08/6CCM345A Third Year Project/R/R images/ICA/[80] individual plots/fittest")
+
+pdf(paste(paste("comp", fitComp, sep=" "), ".pdf", sep=""), width = 5, height = 5) 
+plot(ica80$S[,fitComp],
+     ica80$S[,fitComp], 
+     col=rainbow(219), 
+     xlab=paste("Comp", fitComp, sep=" "), 
+     ylab=paste("Comp", fitComp, sep=" "))
+dev.off()
+
+uniVal80new[50]
+\end{verbatim}

@@ -1,0 +1,211 @@
+\section{Dimensional Reduction} \label{sec:formalism}
+
+
+Dimensional reduction is a technique used in data science to reduce the number of variables (in other words dimensions) in a data set. The goal of dimensional reduction is to simplify the data set while preserving as much relevant information as possible \cite{Varkonyi}. Dimensional reduction techniques can be categorized into two main types \cite{categorized}:
+
+Feature selection: This technique selects a subset of the original features of the data set to use for analysis. The general mechanism of feature selection is based on various statistical and machine learning techniques.
+
+Feature extraction: This technique creates new features that are combinations of the original features. The new features are chosen based on their ability to capture as much variation in the data as possible. 
+
+In this dissertation we are going to mainly focus on dimensional reduction techniques that are categorized as feature extraction.
+
+Dimensional reduction is effective in various ways, such as reducing the complexity of the data, improving the efficiency of machine learning algorithms, and visualizing high-dimensional data in lower dimensions. However, it is important to keep in mind dimensional reduction comes with a cost that it can lead to loss of information. Therefore, it is necessary to deliberately consider the trade-off between the reduction in complexity and the loss of information \cite{Pigoli}.
+
+
+\subsection{Principal Component Analysis (PCA)}
+
+
+One of the most widely known dimensional reduction technique is the Principal Component Analysis (PCA). PCA is a technique that is often used to reduce the dimension of a large data set by transforming large set of variables from the data into smaller redefined ones that contains most of the key information \cite{Jaadi}. Such smaller redefined set of variables are called principal components. The principal components of a set of data are computed so that it provides a sequence of best linear approximations of the data \cite{Friedman}.
+
+Transforming the original variables from the data into smaller redefined ones eventually comes at the expense of accuracy, as the overall size of the data has been reduced. However, the key mechanism of PCA lies within this very aspect; exchanging a little bit of accuracy for simplicity of the data. Data with smaller size and dimension are easier to utilise and visualize, and much more efficient when considering running some intricate computing processes such as machine learning.
+
+In conclusion, the core idea of PCA is to reduce the number of variables of a data while preserving as much information as possible.
+
+
+\subsection{Mathematical Definition of Principal Component}
+
+
+The \emph{principal components} of a real data set in $p$ dimensions (or in $\R^{P}$) provide a sequence of best linear approximations to the data of all ranks \emph{q} which is less than or equal to \emph{p}. We are following the mathematical definition of principal component and Principal component analysis from the textbook \cite{Friedman}. 
+
+Consider the \emph{n} observations of the data set as $x_{1}, x_{2}, ... , x_{N}$. The rank-q linear model for representing these observations would be
+\begin{equation} 
+f(\lambda) = \mu + \textbf{V}_{q}\lambda
+\end{equation}
+where $\mu$ is the location vector in \emph{p} dimensional space, $\textbf{V}_{q}$ is a \emph{p} x \emph{q} matrix with \emph{q}-orthogonal unit vectors as columns, and $\lambda$ is a q-vector of parameters. Fitting this model into the designated data by least squares can be rephrased as finding such values that minimizes the \emph{reconstruction error}:
+\begin{equation}
+\min_{\mu, {\lambda_{i}}, \textbf{V}_{q}} \sum_{i=1}^{N}\norm{x_{i} - \mu - \textbf{V}_{q}\lambda_{i}}^{2}
+\end{equation}
+From this equation we can partially optimize for the value of $\mu$ and the $\lambda_{i}$ such that it satisfies the following two equations:
+\begin{equation}
+\hat{\mu} = \bar{x}
+\end{equation}
+\begin{equation}
+\hat{\lambda_{i}} = \textbf{V}_{q}^{T}(x_{i} - \bar{x})
+\end{equation}
+This eventually leads us to computing the orthogonal matrix: $\textbf{V}_{q}$:
+\begin{equation}
+\min_{\textbf{V}_{q}} \sum_{i=1}^{N}\norm{(x_{i} - \bar{x}) - \textbf{V}_{q}\textbf{V}_{q}^{t}(x_{i} - \bar{x})}^{2}
+\end{equation}
+We assume that the mean $\bar{x} = 0$. The $p$ × $p$-dimension matrix $\textbf{H}_{q} = \textbf{V}_{q}\textbf{V}_{q}^{T}$ is a \emph{projection matrix}, which maps each of the points $x_{i}$ onto its rank-$q$ reconstructions $\textbf{H}_{q}x_{i}$, the orthogonal projection of $x_{i}$ to the spanned subspace by the columns of the matrix $\textbf{V}_{q}$.
+The solution can be expressed as follows. Stack the centered observations into the rows of an $N$ × $p$-dimension matrix $\textbf{X}$. Now we can construct the \emph{singular value decomposition} of $\textbf{X}$ as:
+\begin{equation}
+    \textbf{X} = \textbf{UDV}^{T}
+\end{equation}
+
+Here, \textbf{U} is an $N$ × $p$-dimension orthogonal matrix (where $\textbf{U}^{T}\textbf{U} = \textbf{I}_{p}$) which the columns $\textbf{u}_{j}$ are denoted as the \emph{left singular vectors}. Similarly, \textbf{V} is a $p$x$p$-dimension orthogonal matrix ($\textbf{V}^{T}\textbf{V} = \textbf{I}_{p}$) with its columns $v_{j}$ denoted as the \emph{right singular vectors}, and \textbf{D} is a $p$x$p$-dimension diagonal matrix, with diagonal elements $d_{1} \geq d_{2} \geq ... \geq d_{p} \geq 0$ known as the singular values. The first $q$ columns of \textbf{v} are the solution $\textbf{V}_{q}$ for each rank $q$. The columns of \textbf{UD} are called the \emph{principal components} of \textbf{X}. The first $q$ principal components give out the $N$ optimal $\hat{\lambda_{i}}$ (the $N$ rows of the $N$ × $q$ matrix$\textbf{U}_{q}\textbf{D}_{q}$).
+
+
+\newpage
+\subsection{Applicational process of PCA}
+
+
+PCA is processed on a data by going through five main steps. In this section we would go through the five steps by taking an example of a 3-dimensional data set with enough objects and 3 distinct variables \emph{x, y, z} \cite{Jaadi}. 
+
+The first step is to transform the data points for variables \emph{x, y, z} of the data into a standardized z-score and rearranging the range of variables. This process is necessary as it transforms the variables to be put on an equal scale for further comparison.
+
+The second step is to compute the covariance matrix of the transformed data points for variables \emph{x, y, z} from the first step.
+
+The third step is to compute the eigenvectors and eigenvalues of the covariance matrix from the second step. For a covariance matrix with rank \emph{n}, the matrix will have \emph{n} distinct eigenvectors. Following the example case, there would be 3 eigenvectors $v_{1},v_{2},v_{3}$, and corresponding 3 eigenvalues $\lambda_{1}$, $\lambda_{2}$, $\lambda_{3}$.
+
+Each of the eigenvectors represents the direction for the projected linear combinations of the variables \emph{x, y, z}. These projected linear combinations are called the principal components.
+
+The fourth step is to determine the featuring matrix. The amount of information projected to the principal components is proportionate to the eigenvalues $\lambda_{1}$, $\lambda_{2}$, $\lambda_{3}$ that corresponds to the relating eigenvectors $v_{1},v_{2},v_{3}$ of each principal components. The percentage of information projected on the principal component corresponding to eigenvector $v_n$ can be expressed as an equation.
+\begin{equation}
+I_{v_{n}} = \lambda_{n}/(\Sigma \lambda)
+\end{equation}
+
+By choosing which principal component to include and exclude, we can compute the featuring matrix and regulate the dimension and the loss of information of the final analysis. For example, if we decide to exclude the principal component corresponding to eigenvector $v_3$, our featuring matrix $f_m$ would be a 3x2 matrix
+\begin{equation}
+\begin{bmatrix}
+   &   \\
+v_{1} & v_{2}\\
+   & 
+\end{bmatrix}
+\end{equation}
+having each columns as the principal components $v_1$ and $v_2$.
+
+The Last step is to compute the projection of the original data points along the principal component axes. The final data set $\textbf{D}_{f_m}$ can be computed by the equation.
+
+\begin{center}
+$\textbf{D}_{f_m}$ = $(f_m)^{T}*\textbf{SODS}^T$
+\end{center}
+
+where $(f_m)^T$ is the transpose of the featuring matrix and $\textbf{SODS}^T$ is the transpose of the standardized original data set.
+
+Since we have excluded a principal component, our resulting data would have one less dimension from the original data, thus a 2-dimensional visual representation.
+
+
+\newpage
+\subsection{Independent Component Analysis (ICA)}
+
+
+Independent component analysis (ICA) is a widely-used dimensional reduction technique. It is a technique used for transforming an observed multidimensional random variable into a set of independent non-Gaussian variables \cite{Tharwat}.
+
+From a recorded acoustic signal, specific measurement of sounds are difficult to be isolated from a noise. For an example, a general sound recording in a classroom would not only include the voice of the student talking but also sounds of footsteps, rustling, stationery, books, etc. Hence, it is difficult to record a clean measurement of a specific sound.
+
+Thus, a data recording of a specific sound can be interpreted as a combination of various independent sources. The general topic of such mixed signals is also known blind source separation (BSS). 
+
+One of the most widely-known examples of BSS problems is the "cocktail party problem". The term "cocktail party" refers to a typical situation of a crowded social gathering, where various groups of people are simultaneously speaking, therefore a situation where it is challenging to isolate and focus on a single conversation \cite{cocktail}.
+
+Situations that entails the same problem as the cocktail party scenario occurs in a variety of real-world situations: where it is necessary to separate and identify individual sound sources from a muddle of various sounds. Some real-world examples could be speech recognition, hearing aids, and surveillance systems.
+
+ICA is denoted as one of the most well-suited technique for this particular problem. The objective of this problem is to identify or extract the sound into a single object, where various sounds in the environment are overlapped on one another. 
+
+Finding a linear transformation of the data that optimizes statistical independence between the resulting components is the main principle of ICA. In order to maximize the independence of the components, ICA aims to identify a collection of basis vectors that can be used to represent the data.
+
+ICA has different types of algorithms, such as fastICA, projection pursuit, and Infomax. By maximizing the non-Gaussianity, minimizing the mutual information, or using maximum likelihood estimation method, these algorithms seeks to achieve its goal: to extract independent components. 
+
+ICA is often denoted as an extensional technique of PCA \cite{Tharwat}. ICA and PCA are alike in a sense that both intends to transform the data set into linearly independent components. However, PCA aims to optimize the covariance matrix of the data (which generally represents second order statistics), while ICA focuses on optimizing higher order statistics.The key difference between the two is that when PCA seeks to find directions of maximal variance in the data, ICA seeks to find directions of maximal statistical independence.
+
+
+\newpage
+\subsection{Mathematical Definition of ICA}
+
+
+\begin{definition}[Independent Component] \emph{Independent components} refer to variables that are statistically independent of each other; these components are linearly unrelated and carry unique information that cannot be found from any other components \cite{Tharwat}. We are following the mathematical definition of independent component and independent component analysis from the textbook \cite{Aapo}. 
+
+We can use a statistical latent variables model in order to come up with a rigorous definition of ICA. Let us assume that we observe n linear mixtures $x_{1},x_{2}, ... , x_{n}$ of independent components $s_{1},s_{2}, ... , s_{k}$, where each mixtures are in form:
+\begin{equation}
+x_{j} = a_{j_{1}}s_{1} + a_{j_{2}}s_{2} + ... + a_{j_{n}}s_{n}
+\end{equation}
+for all j in $\R$.
+
+We assume that each mixture $x_{j}$, as well as each independent component $s_{k}$, are random variable in the ICA model. The observed values $x_{j}(t)$ are then a sample of this random variable. Without the loss of generality, We presume that the independent components and mixture variables both have zero means. If this is not true, the we can always center the observable variables $x_{i}$ by subtracting the sample mean, which makes the model zero-mean.
+
+It is more convenient to use the vector-matrix notation instead of the sums of combinations of independent components. Let us denote \emph{x} as the random vector whose elements are mixtures $x_{1},x_{2}, ... , x_{n}$. Let us also denote A as the matrix with elements $a_{ij}$. The vector $x^{T}$, or the transpose of \emph{x}, is considered as a row vector, since all vectors are understood as column vectors. Using this vector-matrix notation, the mixing model can be written as an equation:
+\begin{equation}
+x = AS
+\end{equation}
+
+Denoting the column matrix of \emph{A} as $A_{j}$, the equation can also be expressed as the following:
+\begin{equation}
+x = \sum_{i = 1}^{n}a_{i}s_{i}
+\end{equation}
+
+The statistical model in the equation above is referred as the mathematical definition of independent component analysis, or ICA. Since ICA is a generative model, it demonstrates how the observed data are produced through a process of combining the components $s_{i}$. 
+As the independent components are latent variables, it is difficult to observe them immediately. The mixing matrix is also generally thought as an unknown variable. We only have the random vector x to go on, so we must use it to infer both A and s. The process must be done under general assumptions as possible. 
+The very basic assumption that the components $s_i$ are statistically separate serves as the starting point for ICA. We must also assume that the independent component must have non-Gaussian distributions, as it will be demonstrated further down. However, we do not presume that we know about these distributions. The unknown mixing matrix is assumed to be square for the sake of simplicity, but this assumption may occasionally be relaxed. 
+After estimating the matrix \emph{A}, we can now compute its inverse \emph{W} and obtain the independent component with the following equation:
+\begin{equation}
+s = Wx
+\end{equation}
+
+\end{definition}
+
+
+\subsection{Applicational process of ICA}
+
+
+The ICA process consists of three main stages: centering of the data, whitening of the data, and the actual ICA algorithm application on the data. In this dissertation, among various types of ICA algorithms, we are going to focus mainly on \emph{fastICA}.
+
+\emph{fastICA} is an efficient and one of the most popular algorithms for ICA \cite{fastICA}. Similar to most of ICA algorithms, \emph{fastICA} uses a fixed-point iteration method to orthogonally rotate the pre-whitened data in an effort to optimize the rotation's non-Gaussianity. Statistical independence, which is one of the key conditions that needs infinite data to verify, is proxied by non-gaussianity. 
+
+fastICA has a convergence rate of cubic or at least quadratic. It is considered to be much more efficient and faster than other algorithms. The aspect that fastICA has no additional parameters or learning rate also makes it more easier to use.
+
+Note that the three main stages of the process are all inclusive in the fastICA algorithm.
+
+The first step of the ICA process is centering. The goal of this process is to center the data by simply subtracting the mean from all sample points of the audio signal. 
+
+Given a data set of \emph{n} signals \textbf{X} where the mean of all signals is $\mu$, we can compute the the centered signal \textbf{D} with the following equation:
+\begin{equation} 
+\textbf{D} = \textbf{X} - \mu = \begin{pmatrix}
+\textbf{x}_1 - \mu\\
+\textbf{x}_2 - \mu\\
+.\\
+.\\
+\textbf{x}_n - \mu
+\end{pmatrix} = \begin{pmatrix}
+\textbf{d}_1\\
+\textbf{d}_2\\
+.\\
+.\\
+\textbf{d}_n
+\end{pmatrix}
+\end{equation}
+After completing the ICA, $\mu$ can be added back to the independent components.
+
+Second step of the ICA process is whitening. Whitening a data refers to the process of transforming it into uncorrelated data and re-scaling them to be in unit variance. As described, the whitening process can be divided into two parts: decorrelation and scaling.
+
+We can use the technique used in PCA method for decorrelating data. We start by calculate the covariance matrix of the centered signal data \textbf{D}. The covariance matrix of any two variables $x_{i}, x_{j}$ is defined as the following equation:
+\begin{equation}
+    \textbf{K}_{X_{i}X_{j}} = \textbf{E}[x_{i}x_{j}] - \textbf{E}[x_{i}][x_{j}] = \textbf{E}[(x_{i}-\mu_{i})(x_{j}-\mu_{j})]
+\end{equation}
+With more than two variables, the covariance matrix is calculated as the following equation:
+\begin{equation}
+    \textbf{K} = \textbf{E}[\textbf{D}\textbf{D}^{T}]
+\end{equation}
+The covariance matrix can be solved by calculating the following equation regarding the eigenvalues and eigenvectors $\lambda, \textbf{V}$:
+\begin{equation}
+    \textbf{V}\sum = \lambda\textbf{V}
+\end{equation}
+As in PCA, the eigenvectors \textbf{V} represent the principal components and the eigenvalues $\lambda$ represents the magnitude of the eigenvectors. The eigenvector with maximum eigenvalue is the first principal component.
+We can decorrelate the signal data by solving the following equation:
+\begin{equation}
+    \textbf{U} = \textbf{V}\textbf{D}
+\end{equation}
+Now, in order to whiten the data we have to scale the decorrelated signal data to be within unit variance. The whitened data \textbf{Z} can be calculated by the following equation:
+\begin{equation}
+    \textbf{Z} = \lambda^{-1/2}\textbf{U} = \lambda^{-1/2}\textbf{V}\textbf{D}
+\end{equation}
+Then the data becomes rotationally symmetric, therefore whitened.
+
